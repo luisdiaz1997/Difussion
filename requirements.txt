@@ -1,0 +1,32 @@
+# Core dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+
+# For diffusion models
+numpy>=1.24.0
+pillow>=9.0.0
+tqdm>=4.65.0
+
+# Data handling
+matplotlib>=3.7.0
+scipy>=1.10.0
+
+# Optional but useful
+einops>=0.6.0
+accelerate>=0.20.0
+transformers>=4.30.0
+
+# Development
+jupyter>=1.0.0
+ipywidgets>=8.0.0
+
+# Note: This configuration works for both Linux (with/without GPU) and macOS
+# PyTorch will automatically detect and use CUDA if available on Linux
+# On macOS, it will use CPU or MPS (Metal Performance Shaders) if available
+#
+# For explicit CUDA support on Linux, you can install with:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+#
+# For ROCm support on AMD GPUs:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6
