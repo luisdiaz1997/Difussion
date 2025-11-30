@@ -15,6 +15,13 @@ from .models import (
     UpBlock
 )
 
+# Simple models for experimentation
+from .simple_models import (
+    SimpleMLP,
+    SimpleCNN,
+    SinusoidalPosEmb
+)
+
 # Training utilities
 from .training_utils import (
     DDPMTrainer,
@@ -53,6 +60,10 @@ __all__ = [
     'AttentionBlock',
     'DownBlock',
     'UpBlock',
+    # Simple Models
+    'SimpleMLP',
+    'SimpleCNN',
+    'SinusoidalPosEmb',
     # Training
     'DDPMTrainer',
     'sample_ddpm',
