@@ -5,6 +5,7 @@ These are much simpler than U-Nets and work well for MNIST
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
 
 
@@ -190,6 +191,120 @@ class SinusoidalPosEmb(nn.Module):
         emb = t[:, None] * emb[None, :]
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
         return emb
+
+
+class SimpleConvDenoiser(nn.Module):
+    """
+    Super simple convolutional autoencoder for MNIST
+    Just like a VAE encoder-decoder but without the VAE parts
+
+    NO time embedding - just learns to denoise
+    Perfect for testing if diffusion works at all
+    """
+
+    def __init__(self, image_size=28, latent_dim=64):
+        super().__init__()
+
+        # Encoder: 28x28 -> 14x14 -> 7x7 -> latent
+        self.encoder = nn.Sequential(
+            # 28x28 -> 14x14
+            nn.Conv2d(1, 32, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+
+            # 14x14 -> 7x7
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+
+            # 7x7 -> 4x4
+            nn.Conv2d(64, 64, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+        )
+
+        # Decoder: latent -> 7x7 -> 14x14 -> 28x28
+        self.decoder = nn.Sequential(
+            # 4x4 -> 7x7
+            nn.ConvTranspose2d(64, 64, 3, stride=2, padding=1, output_padding=0),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
+
+            # 7x7 -> 14x14
+            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+
+            # 14x14 -> 28x28
+            nn.ConvTranspose2d(32, 1, 3, stride=2, padding=1, output_padding=1),
+        )
+
+    def forward(self, x, t=None):
+        """
+        Args:
+            x: Noisy images [B, 1, 28, 28]
+            t: Timesteps (IGNORED - we don't use it!)
+        Returns:
+            Predicted noise [B, 1, 28, 28]
+        """
+        # Encode
+        h = self.encoder(x)
+
+        # Decode
+        out = self.decoder(h)
+
+        # Make sure output is same size as input
+        if out.shape != x.shape:
+            out = F.interpolate(out, size=x.shape[-2:], mode='bilinear', align_corners=False)
+
+        return out
+
+
+class TinyConvDenoiser(nn.Module):
+    """
+    Even tinier - just 2 conv layers down, 2 up
+    Absolute minimal model for testing
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        # Down
+        self.down1 = nn.Sequential(
+            nn.Conv2d(1, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 3, stride=2, padding=1),  # 28 -> 14
+            nn.ReLU(),
+        )
+
+        self.down2 = nn.Sequential(
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),  # 14 -> 7
+            nn.ReLU(),
+        )
+
+        # Up
+        self.up2 = nn.Sequential(
+            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),  # 7 -> 14
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.ReLU(),
+        )
+
+        self.up1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 16, 4, stride=2, padding=1),  # 14 -> 28
+            nn.ReLU(),
+            nn.Conv2d(16, 1, 3, padding=1),
+        )
+
+    def forward(self, x, t=None):
+        """No time conditioning - same network for all timesteps"""
+        h = self.down1(x)
+        h = self.down2(h)
+        h = self.up2(h)
+        h = self.up1(h)
+        return h
 
 
 def count_parameters(model):

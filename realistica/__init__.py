@@ -19,6 +19,8 @@ from .models import (
 from .simple_models import (
     SimpleMLP,
     SimpleCNN,
+    SimpleConvDenoiser,
+    TinyConvDenoiser,
     SinusoidalPosEmb
 )
 
@@ -63,6 +65,8 @@ __all__ = [
     # Simple Models
     'SimpleMLP',
     'SimpleCNN',
+    'SimpleConvDenoiser',
+    'TinyConvDenoiser',
     'SinusoidalPosEmb',
     # Training
     'DDPMTrainer',
